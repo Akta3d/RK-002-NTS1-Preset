@@ -1,5 +1,5 @@
 # RK-002-NTS1-Preset
-Version 0.1
+Version 0.2
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
@@ -55,18 +55,22 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - Click on "Upload to RK-002"
 
 **Step 3: Set firmware parameters**
-- **CHANNEL:** Type the Midi channel to use with your NTS1
+- **CHANNEL:** Midi channel to use with your NTS1
+- **CC_SAVE:** Midi CC control to save a preset. Default 117
+- **PRESET_CHANNEL:** Midi channel to use to read/write preset. Default 10
+- **PRESET_MIN_NOTE:** Midi note of preset 1. Default 5
+- **PRESET_MAX_NOTE:** Midi note of preset 11. Default 15 (CAUTION: PRESET_MAX_NOTE - PRESET_MIN_NOTE must equal to 10)
 - **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation wich will be the startup one for your next session).
 
 **Step 4: Midi controller configuration to control the RK-002 cable**
-- Configure a button/pad for to save preset (Called CC_SAVE in this documentation) 
-  - Control CC 117
-  - Value of 127 when pressed
-  - Channel of the NTS1
+- Configure a button/pad for to save preset
+  - Control CC: {CC_SAVE}
+  - Value: 127 when pressed
+  - Channel: {CHANNEL} of the NTS1
 - Configure 11 buttons/pads to select/save preset (Called NOTE_PRESET_X in this documentation)
-  - Note 5 to 15
-  - Value of 127 when pressed
-  - Channel 10
+  - Note: {PRESET_MIN_NOTE} to {PRESET_MAX_NOTE}
+  - Value: 127 when pressed
+  - Channel: {PRESET_CHANNEL}
 
 **Step 5: Connect**
 - Connect the cable between your controller and the NTS1 (orange plug to NTS1)
@@ -80,6 +84,6 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - Press NOTE_PRESET_X corresponding to the desired preset
 
 # TODO
-- Not used actually: VELO_CC = maps extra CC under as well, by default set to 45, which makes filter EG available under velocity
-- Not used actually: MOD_CC = remap modulation wheel on other CC, default set to 26, LFO_DP to be able to make tremolo's
+- Not used actually: CC_VELO = maps extra CC under as well, by default set to 45, which makes filter EG available under velocity
+- Not used actually: CC_MOD = remap modulation wheel on other CC, default set to 26, LFO_DP to be able to make tremolo's
 - Not used actually: velocity FX on/off is CC 115

@@ -12,7 +12,7 @@
 
 /* 
 # RK-002-NTS1-Preset
-Version 0.1
+Version 0.2
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
@@ -68,18 +68,22 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - Click on "Upload to RK-002"
 
 **Step 3: Set firmware parameters**
-- **CHANNEL:** Type the Midi channel to use with your NTS1
+- **CHANNEL:** Midi channel to use with your NTS1
+- **CC_SAVE:** Midi CC control to save a preset. Default 117
+- **PRESET_CHANNEL:** Midi channel to use to read/write preset. Default 10
+- **PRESET_MIN_NOTE:** Midi note of preset 1. Default 5
+- **PRESET_MAX_NOTE:** Midi note of preset 11. Default 15 (CAUTION: PRESET_MAX_NOTE - PRESET_MIN_NOTE must equal to 10)
 - **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation wich will be the startup one for your next session).
 
 **Step 4: Midi controller configuration to control the RK-002 cable**
-- Configure a button/pad for to save preset (Called CC_SAVE in this documentation) 
-  - Control CC 117
-  - Value of 127 when pressed
-  - Channel of the NTS1
+- Configure a button/pad for to save preset
+  - Control CC: {CC_SAVE}
+  - Value: 127 when pressed
+  - Channel: {CHANNEL} of the NTS1
 - Configure 11 buttons/pads to select/save preset (Called NOTE_PRESET_X in this documentation)
-  - Note 5 to 15
-  - Value of 127 when pressed
-  - Channel 10
+  - Note: {PRESET_MIN_NOTE} to {PRESET_MAX_NOTE}
+  - Value: 127 when pressed
+  - Channel: {PRESET_CHANNEL}
 
 **Step 5: Connect**
 - Connect the cable between your controller and the NTS1 (orange plug to NTS1)
@@ -93,8 +97,8 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - Press NOTE_PRESET_X corresponding to the desired preset
 
 # TODO
-- Not used actually: VELO_CC = maps extra CC under as well, by default set to 45, which makes filter EG available under velocity
-- Not used actually: MOD_CC = remap modulation wheel on other CC, default set to 26, LFO_DP to be able to make tremolo's
+- Not used actually: CC_VELO = maps extra CC under as well, by default set to 45, which makes filter EG available under velocity
+- Not used actually: CC_MOD = remap modulation wheel on other CC, default set to 26, LFO_DP to be able to make tremolo's
 - Not used actually: velocity FX on/off is CC 115
  */
  
@@ -103,15 +107,19 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 // Select at least 4K flash data option in RK002 compile options (Arduino IDE -> tools -> memory layout )
 // ******************************************
 
-RK002_DECLARE_PARAM(CHANNEL,1,0,16,1)
-RK002_DECLARE_PARAM(BOOTPATCH,1,0,31,0)
-// RK002_DECLARE_PARAM(VELO_CC,1,0,127,45)
-// RK002_DECLARE_PARAM(MOD_CC,1,0,127,26)
+RK002_DECLARE_PARAM(CHANNEL, 1, 0, 16, 1)
+RK002_DECLARE_PARAM(CC_SAVE, 1, 0, 127, 117)
+RK002_DECLARE_PARAM(PRESET_CHANNEL, 1, 0, 16, 1)
+RK002_DECLARE_PARAM(PRESET_MIN_NOTE, 1, 0, 127, 5)
+RK002_DECLARE_PARAM(PRESET_MAX_NOTE, 1, 0, 127, 15)
+// RK002_DECLARE_PARAM(CC_VELO, 1, 0, 127, 45)
+// RK002_DECLARE_PARAM(CC_MOD, 1, 0, 127, 26)
+RK002_DECLARE_PARAM(BOOTPATCH, 1, 0, 31, 0)
 
 RK002_DECLARE_INFO("LaunchKey NTS1 Akta3D","Akta3D","0.1","80812b8f-7b9e-4c81-a143-43eaa8681c4a")
-//https://www.guidgenerator.com/online-guid-generator.aspx
+// https://www.guidgenerator.com/online-guid-generator.aspx
 
-#define PATCHLEN 30 /*29 NTS1 CC control + 1 for FX_002 to control velocity On/Off */
+#define PATCHLEN 30 /* 29 NTS1 CC control + 1 for FX_002 to control velocity On/Off */
 #define TOTALPATCHES 11
 
 #define FX_002  0
@@ -158,185 +166,191 @@ RK002_DECLARE_INFO("LaunchKey NTS1 Akta3D","Akta3D","0.1","80812b8f-7b9e-4c81-a1
 // define specific value to detect if tables are already present in RK002 memory
 #define FLASH_SIGNATURE     0xDEADBEAD
 
-byte midichn = 0; // receives nrpn settings
-byte activepatch = 0;
-bool recording = false;
-bool velofx = false;
+byte _defaultChannel = 0; // receives nrpn settings
+byte _ccSave = 117;
+byte _presetChannel = 9; // default channel 10 (nts1 - 1) 
+byte _presetMinNote = 5;
+byte _presetMaxNote = 15;
 
-byte workmem[PATCHLEN];
+byte _activepatch = 0;
+bool _recording = false;
+bool _velofx = false;
 
-static byte patchmatch[PATCHLEN] = {FX_002,EG_TYP,EG_ATK,EG_REL,TRM_DP,TRM_RT,LFO_DP,LFO_RT,MOD_DP,MOD_RT,DLY_TM,DLY_DP,DLY_MX,RVB_TM,RVB_DP,RVB_MX,FLT_TP,FLT_CT,FLT_RS,FLT_DP,FLT_RT,OSC_TP,OSC_SP,OSC_AT,MOD_TP,DLY_TP,RVB_TP,ARP_PT,ARP_IT,ARP_LN};
+byte _workmem[PATCHLEN];
+
+static byte _patchmatch[PATCHLEN] = {FX_002,EG_TYP,EG_ATK,EG_REL,TRM_DP,TRM_RT,LFO_DP,LFO_RT,MOD_DP,MOD_RT,DLY_TM,DLY_DP,DLY_MX,RVB_TM,RVB_DP,RVB_MX,FLT_TP,FLT_CT,FLT_RS,FLT_DP,FLT_RT,OSC_TP,OSC_SP,OSC_AT,MOD_TP,DLY_TP,RVB_TP,ARP_PT,ARP_IT,ARP_LN};
 //                                     0 .    1 .   2 .    3 .     4 .    5 .    6 .   7 .    8 .    9 .    10 .   11 .   12 .   13 .   14 .   15 .   16 .   17 .   18 .   19 .   20 .   21 .   22 .   23 .   24 .   25 .   26 .    27 .   28 .   29 
 
 // define memory table structure
 struct
 {
-  uint32_t signature;
-  byte patches[TOTALPATCHES][PATCHLEN];  
+    uint32_t signature;
+    byte patches[TOTALPATCHES][PATCHLEN];  
 } flashdata;
 
 
-void getMemPreset(byte nr){
-  activepatch = nr;
-  RK002_paramSet(BOOTPATCH, activepatch);
-  for(byte i = 0 ; i < PATCHLEN ; i++){
-     workmem[i] = flashdata.patches[nr][i];
-     if(i == 0){
-      velofx = (workmem[FX_002] == 1);
-     }else{
-       RK002_sendControlChange(midichn, patchmatch[i], flashdata.patches[nr][i]);
-     }
-  }
+void getMemPreset(byte nr) {
+    _activepatch = nr;
+    RK002_paramSet(BOOTPATCH, _activepatch);
+    for(byte i = 0 ; i < PATCHLEN ; i++) {
+        _workmem[i] = flashdata.patches[nr][i];
+        if(i == 0) {
+            _velofx = (_workmem[FX_002] == 1);
+        } else {
+            RK002_sendControlChange(_defaultChannel, _patchmatch[i], flashdata.patches[nr][i]);
+        }
+    }
 }
 
 //reads / initializes memory with lookup tables
-void recallMapsFromFlash()
-{
-  int res = RK002_readFlash(0, sizeof(flashdata), (byte*)&flashdata);
+void recallMapsFromFlash() {
+    int res = RK002_readFlash(0, sizeof(flashdata), (byte*)&flashdata);
 
-  // init flash if readback failed:
-  if ((res != 0) || (flashdata.signature != FLASH_SIGNATURE))
-  {
-    RK002_printf("init patches");
+    // init flash if readback failed:
+    if ((res != 0) || (flashdata.signature != FLASH_SIGNATURE)) {
+        RK002_printf("init patches");
 
-    // initialize
-    for (byte i = 0; i < TOTALPATCHES; i++)
-    {
-      for (byte j = 0; j < PATCHLEN; j++)
-      {
-        flashdata.patches[i][j] = 0;
-        if(j==17) flashdata.patches[i][j] = 127; // filter cutoff full
-        if(j==19) flashdata.patches[i][j] = 64; // filter depth 0
-        if(j==4) flashdata.patches[i][j] = 64; // tremolo depth 0
-        if(j==6) flashdata.patches[i][j] = 64; // lfo int 0
-        if(j==7) flashdata.patches[i][j] = 77; // lfo rate
-      }
+        // initialize
+        for (byte i = 0; i < TOTALPATCHES; i++) {
+            for (byte j = 0; j < PATCHLEN; j++) {
+                flashdata.patches[i][j] = 0;
+                if(j==17) flashdata.patches[i][j] = 127; // filter cutoff full
+                if(j==19) flashdata.patches[i][j] = 64; // filter depth 0
+                if(j==4) flashdata.patches[i][j] = 64; // tremolo depth 0
+                if(j==6) flashdata.patches[i][j] = 64; // lfo int 0
+                if(j==7) flashdata.patches[i][j] = 77; // lfo rate
+            }
+        }
+
+        flashdata.signature = FLASH_SIGNATURE;    
+        RK002_writeFlash(0, sizeof(flashdata), (byte*)&flashdata);
+    } else {
+        getMemPreset(RK002_paramGet(BOOTPATCH));
     }
-
-    flashdata.signature = FLASH_SIGNATURE;    
-    RK002_writeFlash(0, sizeof(flashdata), (byte*)&flashdata);
-  } else {
-    getMemPreset(RK002_paramGet(BOOTPATCH));
-  }
 }
 
 //writes table data to RK002 memory
-void storeMemPreset(byte nr)
-{
-  activepatch = nr;
-  for(byte i = 0 ; i < PATCHLEN ; i++){
-    flashdata.patches[activepatch][i] = workmem[i];
-  }
-  
-  RK002_paramSet(BOOTPATCH, activepatch);
-  RK002_writeFlash(0, sizeof(flashdata), (byte*)&flashdata);
+void storeMemPreset(byte nr) {
+    _activepatch = nr;
+    for(byte i = 0 ; i < PATCHLEN ; i++) {
+        flashdata.patches[_activepatch][i] = _workmem[i];
+    }
+
+    RK002_paramSet(BOOTPATCH, _activepatch);
+    RK002_writeFlash(0, sizeof(flashdata), (byte*)&flashdata);
 }
 
-bool RK002_onControlChange(byte channel, byte nr, byte val)
-{
-  if(channel != midichn){
-    return true;
-  }
-  
-  // save (record button)
-  if(nr == 117){ 
-      if(val == 127){ // pressed
-        recording = true;
-      } else {
-        recording = false;
-      }
-  }
+bool RK002_onControlChange(byte channel, byte nr, byte val) {
+    if(channel != _defaultChannel) {
+        return true;
+    }
+
+    // save (record button)
+    if(nr == _ccSave) { 
+        if(val == 127) { // pressed
+            _recording = true;
+        } else {
+            _recording = false;
+        }
+    }
 
     /*
-    if(nr==1){
+    if(nr == 1) {
         // modwheel
-        if(RK002_paramGet(MOD_CC)>0){
-        if(velofx) RK002_sendControlChange(midichn,RK002_paramGet(MOD_CC),64-(val/20));
+        if(RK002_paramGet(CC_MOD) > 0) {
+            if(_velofx) RK002_sendControlChange(_defaultChannel, RK002_paramGet(CC_MOD), 64 - (val / 20));
         }
     }
-    if(nr==105){// solo mute button sends all notes off
-        retval=false;
-        if(val==127){ // pressed
-        for(byte noff=123;noff<128;noff++){
-            RK002_sendControlChange(midichn,noff,0);
-        }
-        }
-    }
-    if(nr==104){// > button toggles note velocity/cc fx
-        retval=false;
-        if(val==127){ // pressed
-        velofx=!velofx;
-        workmem[FX_002]=velofx;
+
+    if(nr == 105) { // solo mute button sends all notes off
+        retval = false;
+        if(val == 127) { // pressed
+            for(byte noff = 123 ; noff < 128 ; noff++) {
+                RK002_sendControlChange(_defaultChannel, noff, 0);
+            }
         }
     }
-    
+
+    if(nr == 104) { // > button toggles note velocity/cc fx
+        retval = false;
+        if(val == 127) { // pressed
+            _velofx =! _velofx;
+            _workmem[FX_002] = _velofx;
+        }
+    }
+
     */
 
-  // save new CC value in workmem
-  for(byte i = 0 ; i < PATCHLEN ; i++){
-    if(patchmatch[i] == nr){
-      workmem[i] = val;
-      break;
+    // save new CC value in _workmem
+    for(byte i = 0 ; i < PATCHLEN ; i++) {
+        if(_patchmatch[i] == nr){
+            _workmem[i] = val;
+            break;
+        }
     }
-  }
 
-  return true;
+    return true;
 }
 /*
-bool RK002_onProgramChange(byte channel, byte nr){
-  bool retval=true;
-  if(channel==midichn){
-    if(nr<TOTALPATCHES){
-      getMemPreset(nr);
-      retval=false;
+bool RK002_onProgramChange(byte channel, byte nr) {
+    bool retval = true;
+    if(channel ==_defaultChannel) {
+        if(nr < TOTALPATCHES) {
+            getMemPreset(nr);
+            retval = false;
+        }
     }
-  }
-  return retval;
+    return retval;
 }
 */
-bool RK002_onNoteOff(byte ch, byte nr, byte vel){
-  if(ch == 9){    
-    if((nr > 4) and (nr < 16)){
-      if(recording == true){ // not record pressed
-        recording = false;
-        storeMemPreset(nr - 5);
-      } else {
-        getMemPreset(nr - 5);
-      }
+bool RK002_onNoteOff(byte channel, byte nr, byte vel) {
+    if(channel == _presetChannel) {    
+        if((nr >= _presetMinNote) and (nr <= _presetMaxNote)) {
+            if(_recording == true) { // not record pressed
+                _recording = false;
+                storeMemPreset(nr - _presetMinNote);
+            } else {
+                getMemPreset(nr - _presetMinNote);
+            }
+        }
     }
-  }
-  return true;  
+    return true;  
 }
-/*
-bool RK002_onNoteOn(byte ch, byte nr, byte vel){
-  if(ch == midichn){
-    if(RK002_paramGet(VELO_CC) > 0){
-      if(velofx) RK002_sendControlChange(midichn, RK002_paramGet(VELO_CC), vel);
-    }
-  }
-  if(ch == 9){
-    if(nr < 16) return false;
-  }
-  return true;  
-}
-*/
 
-void updateParams(){
-    midichn = RK002_paramGet(CHANNEL) - 1;
-    activepatch = RK002_paramGet(BOOTPATCH);
+
+bool RK002_onNoteOn(byte channel, byte nr, byte vel) {
+    /*
+    if(channel == _defaultChannel) {
+        if(RK002_paramGet(CC_VELO) > 0) {
+            if(_velofx) RK002_sendControlChange(_defaultChannel, RK002_paramGet(CC_VELO), vel);
+        }
+    }
+    */
+    if(channel == _presetChannel) {
+        if((nr >= _presetMinNote) and (nr <= _presetMaxNote)) return false;
+    }
+    return true;  
+}
+
+
+void updateParams() {
+    _defaultChannel = RK002_paramGet(CHANNEL) - 1;
+    _ccSave = RK002_paramGet(CC_SAVE);
+    _presetChannel = RK002_paramGet(PRESET_CHANNEL) - 1;
+    _presetMinNote = RK002_paramGet(PRESET_MIN_NOTE);
+    _presetMaxNote = RK002_paramGet(PRESET_MAX_NOTE);
+    _activepatch = RK002_paramGet(BOOTPATCH);
 }
 
 /* Parameter handlers */
-void RK002_onParamChange(unsigned param_nr, int val){
-  updateParams();
+void RK002_onParamChange(unsigned param_nr, int val) {
+    updateParams();
 }
 
-void setup() 
-{
-  updateParams();
-  recallMapsFromFlash();
+void setup() {
+    updateParams();
+    recallMapsFromFlash();
 }
 
-void loop() 
-{
+void loop() {
 }
