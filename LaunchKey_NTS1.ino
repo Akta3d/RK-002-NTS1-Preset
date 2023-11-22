@@ -12,7 +12,7 @@
 
 /* 
 # RK-002-NTS1-Preset  
-Version 0.4  
+Version 0.5  
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
@@ -75,6 +75,7 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - **PRESET_MAX_NOTE:** (Default 11) Midi note of preset 11.  (CAUTION: PRESET_MAX_NOTE - PRESET_MIN_NOTE must equal to 10)
 - **CC_VELO_ON_OFF:** (Default 115) Midi CC control to turn On/Off velocity mode which send value to CC 45 (filter depth EG). Maps extra CC under as well, which makes available under velocity
 - **CC_MOD:** (Default 0) Midi CC control of the Mod wheel. If greater than 0, remap modulation wheel on other CC 26 (LFO depth) to be able to make tremolo's.
+- **CC_MUTE:** (Default 105) Midi CC control mute all notes
 - **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation which will be the startup one for your next session).
   
 **Step 4: Midi controller configuration to control the RK-002 cable**
@@ -93,7 +94,11 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - Configure the Mod Wheel CC
   - Control CC: {CC_MOD}
   - Channel: {CHANNEL} of the NTS1
-  
+- Configure the Mute CC
+  - Control CC: {CC_MUTE}
+  - Value: 127 when pressed
+  - Channel: {CHANNEL} of the NTS1
+
 **Step 5: Connect**
 - Connect the cable between your controller and the NTS1 (orange plug to NTS1)
   
@@ -121,6 +126,7 @@ RK002_DECLARE_PARAM(PRESET_MIN_NOTE, 1, 0, 127, 5)
 RK002_DECLARE_PARAM(PRESET_MAX_NOTE, 1, 0, 127, 15)
 RK002_DECLARE_PARAM(CC_VELO_ON_OFF, 1, 0, 127, 115)
 RK002_DECLARE_PARAM(CC_MOD, 1, 0, 127, 0)
+RK002_DECLARE_PARAM(CC_MUTE, 1, 0, 127, 105)
 RK002_DECLARE_PARAM(BOOTPATCH, 1, 0, 31, 0)
 
 RK002_DECLARE_INFO("LaunchKey NTS1 Akta3D","Akta3D","0.1","80812b8f-7b9e-4c81-a143-43eaa8681c4a")
@@ -182,6 +188,7 @@ byte _ccVeloOnOff = 115;
 byte _ccVeloChangeNts1 = 45; // Filter Depth
 byte _ccMod = 1;
 byte _ccModChangeNts1 = 26; // LFO Depth
+byte _ccMute = 105;
 
 byte _activepatch = 0;
 bool _recording = false;
@@ -275,8 +282,8 @@ bool RK002_onControlChange(byte channel, byte nr, byte val) {
         
         return false;
     }
-/*
-    if(nr == 105) { // solo mute button sends all notes off
+
+    if(nr == _ccMute) { // solo mute button sends all notes off
         if(val == 127) { // pressed
             for(byte noff = 123 ; noff < 128 ; noff++) {
                 RK002_sendControlChange(_defaultChannel, noff, 0);
@@ -284,7 +291,7 @@ bool RK002_onControlChange(byte channel, byte nr, byte val) {
         }
         return false;
     }
-*/
+
     if(nr == _ccVeloOnOff) { // > button toggles note velocity/cc fx
         if(val == 127) { // pressed
             _velofx =! _velofx;
@@ -354,6 +361,7 @@ void updateParams() {
     _presetMaxNote = RK002_paramGet(PRESET_MAX_NOTE);
     _ccVeloOnOff = RK002_paramGet(CC_VELO_ON_OFF);
     _ccMod = RK002_paramGet(CC_MOD);
+    _ccMute = RK002_paramGet(CC_MUTE);
     _activepatch = RK002_paramGet(BOOTPATCH);
 }
 
