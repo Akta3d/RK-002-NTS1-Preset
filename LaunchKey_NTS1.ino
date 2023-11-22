@@ -12,7 +12,7 @@
 
 /* 
 # RK-002-NTS1-Preset  
-Version 0.5  
+Version 0.6  
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
@@ -76,6 +76,7 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - **CC_VELO_ON_OFF:** (Default 115) Midi CC control to turn On/Off velocity mode which send value to CC 45 (filter depth EG). Maps extra CC under as well, which makes available under velocity
 - **CC_MOD:** (Default 0) Midi CC control of the Mod wheel. If greater than 0, remap modulation wheel on other CC 26 (LFO depth) to be able to make tremolo's.
 - **CC_MUTE:** (Default 105) Midi CC control mute all notes
+- **ENABLE_PROGRAM_CHANGE:** (Default 0) If 1, allow to change preset with Midi Program Change message
 - **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation which will be the startup one for your next session).
   
 **Step 4: Midi controller configuration to control the RK-002 cable**
@@ -109,9 +110,6 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
   
 **Step 7: Loading a preset**
 - Press NOTE_PRESET_X corresponding to the desired preset
-  
-# TODO
-- Enable/Disable program change
  */
  
 // ******************************************
@@ -127,9 +125,10 @@ RK002_DECLARE_PARAM(PRESET_MAX_NOTE, 1, 0, 127, 15)
 RK002_DECLARE_PARAM(CC_VELO_ON_OFF, 1, 0, 127, 115)
 RK002_DECLARE_PARAM(CC_MOD, 1, 0, 127, 0)
 RK002_DECLARE_PARAM(CC_MUTE, 1, 0, 127, 105)
+RK002_DECLARE_PARAM(ENABLE_PROGRAM_CHANGE, 1, 0, 1, 0)
 RK002_DECLARE_PARAM(BOOTPATCH, 1, 0, 31, 0)
 
-RK002_DECLARE_INFO("LaunchKey NTS1 Akta3D","Akta3D","0.1","80812b8f-7b9e-4c81-a143-43eaa8681c4a")
+RK002_DECLARE_INFO("LaunchKey NTS1 Akta3D","Akta3D","0.6","80812b8f-7b9e-4c81-a143-43eaa8681c4a")
 // https://www.guidgenerator.com/online-guid-generator.aspx
 
 #define PATCHLEN 30 /* 29 NTS1 CC control + 1 for FX_002 to control velocity On/Off */
@@ -185,14 +184,15 @@ byte _presetChannel = 9; // default channel 10 (nts1 - 1)
 byte _presetMinNote = 5;
 byte _presetMaxNote = 15;
 byte _ccVeloOnOff = 115;
-byte _ccVeloChangeNts1 = 45; // Filter Depth
 byte _ccMod = 1;
-byte _ccModChangeNts1 = 26; // LFO Depth
 byte _ccMute = 105;
+bool _programChangeEnable = false;
 
 byte _activepatch = 0;
 bool _recording = false;
 bool _velofx = false;
+byte _ccVeloChangeNts1 = 45; // Filter Depth
+byte _ccModChangeNts1 = 26; // LFO Depth
 
 byte _workmem[PATCHLEN];
 
@@ -310,18 +310,20 @@ bool RK002_onControlChange(byte channel, byte nr, byte val) {
 
     return true;
 }
-/*
+
 bool RK002_onProgramChange(byte channel, byte nr) {
     bool retval = true;
     if(channel ==_defaultChannel) {
-        if(nr < TOTALPATCHES) {
-            getMemPreset(nr);
-            retval = false;
+        if(_programChangeEnable) {
+            if(nr < TOTALPATCHES) {
+                getMemPreset(nr);
+                retval = false;
+            }
         }
     }
     return retval;
 }
-*/
+
 bool RK002_onNoteOff(byte channel, byte nr, byte vel) {
     if(channel == _presetChannel) {    
         if((nr >= _presetMinNote) and (nr <= _presetMaxNote)) {
@@ -362,6 +364,7 @@ void updateParams() {
     _ccVeloOnOff = RK002_paramGet(CC_VELO_ON_OFF);
     _ccMod = RK002_paramGet(CC_MOD);
     _ccMute = RK002_paramGet(CC_MUTE);
+    _programChangeEnable = (RK002_paramGet(ENABLE_PROGRAM_CHANGE) == 1);
     _activepatch = RK002_paramGet(BOOTPATCH);
 }
 

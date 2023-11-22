@@ -1,5 +1,5 @@
 # RK-002-NTS1-Preset  
-Version 0.5  
+Version 0.6  
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
@@ -63,6 +63,7 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - **CC_VELO_ON_OFF:** (Default 115) Midi CC control to turn On/Off velocity mode which send value to CC 45 (filter depth EG). Maps extra CC under as well, which makes available under velocity
 - **CC_MOD:** (Default 0) Midi CC control of the Mod wheel. If greater than 0, remap modulation wheel on other CC 26 (LFO depth) to be able to make tremolo's.
 - **CC_MUTE:** (Default 105) Midi CC control mute all notes
+- **ENABLE_PROGRAM_CHANGE:** (Default 0) If 1, allow to change preset with Midi Program Change message
 - **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation which will be the startup one for your next session).
   
 **Step 4: Midi controller configuration to control the RK-002 cable**
@@ -96,6 +97,3 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
   
 **Step 7: Loading a preset**
 - Press NOTE_PRESET_X corresponding to the desired preset
-  
-# TODO
-- Enable/Disable program change
