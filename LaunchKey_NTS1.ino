@@ -11,71 +11,72 @@
 
 
 /* 
-# RK-002-NTS1-Preset
-Version 0.3
+# RK-002-NTS1-Preset  
+Version 0.4  
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
 https://duy.retrokits.com/#
 
-# Goals
-**Korg NTS-1**
-[Website](https://www.korg.com/fr/products/dj/nts_1/index.php)
+# Goals  
+**Korg NTS-1**  
+[Website](https://www.korg.com/fr/products/dj/nts_1/index.php)  
 Is a programmable synthetizer
 
-As the NTS1 has no internal memory, any changes are lost after switch-off.
-The NTS1 can be controlled via a series of 29 CC messages.
-[Midi implementation](https://cdn.korg.com/us/support/download/files/8b4225f3349d609272fcf7ac868212cc.pdf)
+As the NTS1 has no internal memory, any changes are lost after switch-off.  
+The NTS1 can be controlled via a series of 29 CC messages.  
+[Midi implementation](https://cdn.korg.com/us/support/download/files/8b4225f3349d609272fcf7ac868212cc.pdf)  
 
 **Midi cable RK-002**
-[Website](https://www.korg.com/fr/products/dj/nts_1/index.php)
-
-The Retrokits RK-002 cable is a Midi cable incorporating an (arduino-type) chip for interaction with midi events.
-
+[Website](https://www.korg.com/fr/products/dj/nts_1/index.php)  
+  
+The Retrokits RK-002 cable is a Midi cable incorporating an (arduino-type) chip for interaction with midi events.  
+  
 **Purpose**
-With this sketch you can define any MIDI controller to send out NTS1 CC values and the RK002 keeps track of these and can store them in it's own memory. 
-A simple MIDI command can playback these presets and set your NTS1 back to your likings at once. You can store 11 presets in the cable (just because 32 is such a BTDT number :-p )
-
-Note that your custom NTS1 oscilliators/FX are not part of the standardized CC messages so your NTS1 with expansions will not necessarily sound the same on the NTS1 from someone else! This sketch only saves your NTS1 presets, it does not store/copy custom oscilliators/FX or such.
- 
+With this sketch you can define any MIDI controller to send out NTS1 CC values and the RK002 keeps track of these and can store them in it's own memory.  
+A simple MIDI command can playback these presets and set your NTS1 back to your likings at once. You can store 11 presets in the cable (just because 32 is such a BTDT number :-p )  
+  
+Note that your custom NTS1 oscilliators/FX are not part of the standardized CC messages so your NTS1 with expansions will not necessarily sound the same on the NTS1 from someone else! This sketch only saves your NTS1 presets, it does not store/copy custom oscilliators/FX or such.  
+  
 # History
 Initially, this script was designed to work with the Novation LaunchKey Mini MK3 (LKM3) Midi controller with a specific controller configuration.  
-
-Without this controller or without this configuration, the script is not very practical. The original Retrokits code (LaunchKey NTS1) has been modified to work with any controller and any configuration.
-
+  
+Without this controller or without this configuration, the script is not very practical. The original Retrokits code (LaunchKey NTS1) has been modified to work with any controller and any configuration.  
+  
 # How it works
-The RK-002 cable memorizes all changes in value of the 29 NTS1 controllers.
-
-**Preset = 29 CC control values of the NTS1**
-
-You can save the control value of 29 CC in the cable by sending a specific combination of MIDI controls.
-
-Then you can recall your presets by sending a midi note.
-You can store 11 presets in the RK-002 cable.
-
+The RK-002 cable memorizes all changes in value of the 29 NTS1 controllers.  
+  
+**Preset = 29 CC control values of the NTS1**  
+  
+You can save the control value of 29 CC in the cable by sending a specific combination of MIDI controls.  
+  
+Then you can recall your presets by sending a midi note.  
+You can store 11 presets in the RK-002 cable.  
+  
 # How to use it
-
+  
 **Step 1: Midi controller configuration to control the NTS1**
 - Configure your controller so that it can send values to the NTS1's 29 controls.
-See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/files/8b4225f3349d609272fcf7ac868212cc.pdf)
-
-**Step 2: Loading firmware into the RK-002 cable**
+See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/files/8b4225f3349d609272fcf7ac868212cc.pdf)  
+  
+**Step 2: Loading firmware into the RK-002 cable**  
 - Go to the [DUY retrokit website](https://duy.retrokits.com/coder.php)
 - Connect your cable to your computer's Midi interface
 - Copy the code into the editor
 - Select: Hardware layout: 10K code / 4K flashmem
 - Select: MIDI Only
 - Click on "Upload to RK-002"
-
-**Step 3: Set firmware parameters**
+  
+**Step 3: Set firmware parameters**  
 - **CHANNEL:** Midi channel to use with your NTS1
 - **CC_SAVE:** (Default 117) Midi CC control to save a preset.
 - **PRESET_CHANNEL:** (Default 10) Midi channel to use to read/write preset.
 - **PRESET_MIN_NOTE:** (Default 1) Midi note of preset 1.
 - **PRESET_MAX_NOTE:** (Default 11) Midi note of preset 11.  (CAUTION: PRESET_MAX_NOTE - PRESET_MIN_NOTE must equal to 10)
 - **CC_VELO_ON_OFF:** (Default 115) Midi CC control to turn On/Off velocity mode which send value to CC 45 (filter depth EG). Maps extra CC under as well, which makes available under velocity
-- **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation wich will be the startup one for your next session).
-
+- **CC_MOD:** (Default 0) Midi CC control of the Mod wheel. If greater than 0, remap modulation wheel on other CC 26 (LFO depth) to be able to make tremolo's.
+- **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation which will be the startup one for your next session).
+  
 **Step 4: Midi controller configuration to control the RK-002 cable**
 - Configure a button/pad for to save preset
   - Control CC: {CC_SAVE}
@@ -86,23 +87,26 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
   - Value: 127 when pressed
   - Channel: {PRESET_CHANNEL}
 - Configure a button/pad to switch On/off velocity mode
-  - Control C: {CC_VELO_ON_OFF}
+  - Control CC: {CC_VELO_ON_OFF}
   - Value: 127 when pressed
   - Channel: {CHANNEL} of the NTS1
-
+- Configure the Mod Wheel CC
+  - Control CC: {CC_MOD}
+  - Channel: {CHANNEL} of the NTS1
+  
 **Step 5: Connect**
 - Connect the cable between your controller and the NTS1 (orange plug to NTS1)
-
+  
 **Step 6: Saving your preset**
 - Use your controller to set up the NTS1 to obtain the desired sound.
 - Press CC_SAVE and NOTE_PRESET_X of the preset to be saved
 - Release CC_SAVE
-
+  
 **Step 7: Loading a preset**
 - Press NOTE_PRESET_X corresponding to the desired preset
-
+  
 # TODO
-- Not used actually: CC_MOD = remap modulation wheel on other CC, default set to 26, LFO_DP to be able to make tremolo's
+- Enable/Disable program change
  */
  
 // ******************************************
@@ -116,8 +120,7 @@ RK002_DECLARE_PARAM(PRESET_CHANNEL, 1, 0, 16, 1)
 RK002_DECLARE_PARAM(PRESET_MIN_NOTE, 1, 0, 127, 5)
 RK002_DECLARE_PARAM(PRESET_MAX_NOTE, 1, 0, 127, 15)
 RK002_DECLARE_PARAM(CC_VELO_ON_OFF, 1, 0, 127, 115)
-
-// RK002_DECLARE_PARAM(CC_MOD, 1, 0, 127, 26)
+RK002_DECLARE_PARAM(CC_MOD, 1, 0, 127, 0)
 RK002_DECLARE_PARAM(BOOTPATCH, 1, 0, 31, 0)
 
 RK002_DECLARE_INFO("LaunchKey NTS1 Akta3D","Akta3D","0.1","80812b8f-7b9e-4c81-a143-43eaa8681c4a")
@@ -177,6 +180,8 @@ byte _presetMinNote = 5;
 byte _presetMaxNote = 15;
 byte _ccVeloOnOff = 115;
 byte _ccVeloChangeNts1 = 45; // Filter Depth
+byte _ccMod = 1;
+byte _ccModChangeNts1 = 26; // LFO Depth
 
 byte _activepatch = 0;
 bool _recording = false;
@@ -261,16 +266,16 @@ bool RK002_onControlChange(byte channel, byte nr, byte val) {
         return false;
     }
 
-    /*
-    if(nr == 1) {
+    
+    if(nr == _ccMod) {
         // modwheel
-        if(RK002_paramGet(CC_MOD) > 0) {
-            if(_velofx) RK002_sendControlChange(_defaultChannel, RK002_paramGet(CC_MOD), 64 - (val / 20));
+        if(_ccModChangeNts1 > 0) {
+            RK002_sendControlChange(_defaultChannel, _ccModChangeNts1, 64 - (val / 20));
         }
         
         return false;
     }
-
+/*
     if(nr == 105) { // solo mute button sends all notes off
         if(val == 127) { // pressed
             for(byte noff = 123 ; noff < 128 ; noff++) {
@@ -348,6 +353,7 @@ void updateParams() {
     _presetMinNote = RK002_paramGet(PRESET_MIN_NOTE);
     _presetMaxNote = RK002_paramGet(PRESET_MAX_NOTE);
     _ccVeloOnOff = RK002_paramGet(CC_VELO_ON_OFF);
+    _ccMod = RK002_paramGet(CC_MOD);
     _activepatch = RK002_paramGet(BOOTPATCH);
 }
 
