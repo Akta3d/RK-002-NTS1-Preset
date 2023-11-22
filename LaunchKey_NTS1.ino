@@ -12,7 +12,7 @@
 
 /* 
 # RK-002-NTS1-Preset
-Version 0.2
+Version 0.3
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
@@ -69,10 +69,11 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 
 **Step 3: Set firmware parameters**
 - **CHANNEL:** Midi channel to use with your NTS1
-- **CC_SAVE:** Midi CC control to save a preset. Default 117
-- **PRESET_CHANNEL:** Midi channel to use to read/write preset. Default 10
-- **PRESET_MIN_NOTE:** Midi note of preset 1. Default 5
-- **PRESET_MAX_NOTE:** Midi note of preset 11. Default 15 (CAUTION: PRESET_MAX_NOTE - PRESET_MIN_NOTE must equal to 10)
+- **CC_SAVE:** (Default 117) Midi CC control to save a preset.
+- **PRESET_CHANNEL:** (Default 10) Midi channel to use to read/write preset.
+- **PRESET_MIN_NOTE:** (Default 1) Midi note of preset 1.
+- **PRESET_MAX_NOTE:** (Default 11) Midi note of preset 11.  (CAUTION: PRESET_MAX_NOTE - PRESET_MIN_NOTE must equal to 10)
+- **CC_VELO_ON_OFF:** (Default 115) Midi CC control to turn On/Off velocity mode which send value to CC 45 (filter depth EG). Maps extra CC under as well, which makes available under velocity
 - **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation wich will be the startup one for your next session).
 
 **Step 4: Midi controller configuration to control the RK-002 cable**
@@ -84,6 +85,10 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
   - Note: {PRESET_MIN_NOTE} to {PRESET_MAX_NOTE}
   - Value: 127 when pressed
   - Channel: {PRESET_CHANNEL}
+- Configure a button/pad to switch On/off velocity mode
+  - Control C: {CC_VELO_ON_OFF}
+  - Value: 127 when pressed
+  - Channel: {CHANNEL} of the NTS1
 
 **Step 5: Connect**
 - Connect the cable between your controller and the NTS1 (orange plug to NTS1)
@@ -97,9 +102,7 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - Press NOTE_PRESET_X corresponding to the desired preset
 
 # TODO
-- Not used actually: CC_VELO = maps extra CC under as well, by default set to 45, which makes filter EG available under velocity
 - Not used actually: CC_MOD = remap modulation wheel on other CC, default set to 26, LFO_DP to be able to make tremolo's
-- Not used actually: velocity FX on/off is CC 115
  */
  
 // ******************************************
@@ -112,7 +115,8 @@ RK002_DECLARE_PARAM(CC_SAVE, 1, 0, 127, 117)
 RK002_DECLARE_PARAM(PRESET_CHANNEL, 1, 0, 16, 1)
 RK002_DECLARE_PARAM(PRESET_MIN_NOTE, 1, 0, 127, 5)
 RK002_DECLARE_PARAM(PRESET_MAX_NOTE, 1, 0, 127, 15)
-// RK002_DECLARE_PARAM(CC_VELO, 1, 0, 127, 45)
+RK002_DECLARE_PARAM(CC_VELO_ON_OFF, 1, 0, 127, 115)
+
 // RK002_DECLARE_PARAM(CC_MOD, 1, 0, 127, 26)
 RK002_DECLARE_PARAM(BOOTPATCH, 1, 0, 31, 0)
 
@@ -171,6 +175,8 @@ byte _ccSave = 117;
 byte _presetChannel = 9; // default channel 10 (nts1 - 1) 
 byte _presetMinNote = 5;
 byte _presetMaxNote = 15;
+byte _ccVeloOnOff = 115;
+byte _ccVeloChangeNts1 = 45; // Filter Depth
 
 byte _activepatch = 0;
 bool _recording = false;
@@ -252,6 +258,7 @@ bool RK002_onControlChange(byte channel, byte nr, byte val) {
         } else {
             _recording = false;
         }
+        return false;
     }
 
     /*
@@ -260,26 +267,26 @@ bool RK002_onControlChange(byte channel, byte nr, byte val) {
         if(RK002_paramGet(CC_MOD) > 0) {
             if(_velofx) RK002_sendControlChange(_defaultChannel, RK002_paramGet(CC_MOD), 64 - (val / 20));
         }
+        
+        return false;
     }
 
     if(nr == 105) { // solo mute button sends all notes off
-        retval = false;
         if(val == 127) { // pressed
             for(byte noff = 123 ; noff < 128 ; noff++) {
                 RK002_sendControlChange(_defaultChannel, noff, 0);
             }
         }
+        return false;
     }
-
-    if(nr == 104) { // > button toggles note velocity/cc fx
-        retval = false;
+*/
+    if(nr == _ccVeloOnOff) { // > button toggles note velocity/cc fx
         if(val == 127) { // pressed
             _velofx =! _velofx;
             _workmem[FX_002] = _velofx;
         }
-    }
-
-    */
+        return false;
+    }    
 
     // save new CC value in _workmem
     for(byte i = 0 ; i < PATCHLEN ; i++) {
@@ -319,16 +326,17 @@ bool RK002_onNoteOff(byte channel, byte nr, byte vel) {
 
 
 bool RK002_onNoteOn(byte channel, byte nr, byte vel) {
-    /*
+    
     if(channel == _defaultChannel) {
-        if(RK002_paramGet(CC_VELO) > 0) {
-            if(_velofx) RK002_sendControlChange(_defaultChannel, RK002_paramGet(CC_VELO), vel);
+        if(_ccVeloChangeNts1 > 0) {
+            if(_velofx) RK002_sendControlChange(_defaultChannel, _ccVeloChangeNts1, vel);
         }
     }
-    */
+    
     if(channel == _presetChannel) {
         if((nr >= _presetMinNote) and (nr <= _presetMaxNote)) return false;
     }
+
     return true;  
 }
 
@@ -339,6 +347,7 @@ void updateParams() {
     _presetChannel = RK002_paramGet(PRESET_CHANNEL) - 1;
     _presetMinNote = RK002_paramGet(PRESET_MIN_NOTE);
     _presetMaxNote = RK002_paramGet(PRESET_MAX_NOTE);
+    _ccVeloOnOff = RK002_paramGet(CC_VELO_ON_OFF);
     _activepatch = RK002_paramGet(BOOTPATCH);
 }
 
