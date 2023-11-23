@@ -12,7 +12,7 @@
 
 /* 
 # RK-002-NTS1-Preset  
-Version 0.6  
+Version 0.7  
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
@@ -77,6 +77,7 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - **CC_MOD:** (Default 0) Midi CC control of the Mod wheel. If greater than 0, remap modulation wheel on other CC 26 (LFO depth) to be able to make tremolo's.
 - **CC_MUTE:** (Default 105) Midi CC control mute all notes
 - **ENABLE_PROGRAM_CHANGE:** (Default 0) If 1, allow to change preset with Midi Program Change message
+- **CC_AFTER_TOUCH:** (Default 2) Midi CC control of the after touch, allow to send 127 value to CC 43 (Filter CutOff), then restore previous value on release aftertouch
 - **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation which will be the startup one for your next session).
   
 **Step 4: Midi controller configuration to control the RK-002 cable**
@@ -97,6 +98,10 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
   - Channel: {CHANNEL} of the NTS1
 - Configure the Mute CC
   - Control CC: {CC_MUTE}
+  - Value: 127 when pressed
+  - Channel: {CHANNEL} of the NTS1
+- Configure the After touch CC
+  - Control CC: {CC_AFTER_TOUCH}
   - Value: 127 when pressed
   - Channel: {CHANNEL} of the NTS1
 
@@ -126,6 +131,7 @@ RK002_DECLARE_PARAM(CC_VELO_ON_OFF, 1, 0, 127, 115)
 RK002_DECLARE_PARAM(CC_MOD, 1, 0, 127, 0)
 RK002_DECLARE_PARAM(CC_MUTE, 1, 0, 127, 105)
 RK002_DECLARE_PARAM(ENABLE_PROGRAM_CHANGE, 1, 0, 1, 0)
+RK002_DECLARE_PARAM(CC_AFTER_TOUCH, 1, 0, 127, 2)
 RK002_DECLARE_PARAM(BOOTPATCH, 1, 0, 31, 0)
 
 RK002_DECLARE_INFO("LaunchKey NTS1 Akta3D","Akta3D","0.6","80812b8f-7b9e-4c81-a143-43eaa8681c4a")
@@ -187,6 +193,7 @@ byte _ccVeloOnOff = 115;
 byte _ccMod = 1;
 byte _ccMute = 105;
 bool _programChangeEnable = false;
+byte _ccAfterTouch = 2;
 
 byte _activepatch = 0;
 bool _recording = false;
@@ -300,6 +307,15 @@ bool RK002_onControlChange(byte channel, byte nr, byte val) {
         return false;
     }    
 
+    if(nr == _ccAfterTouch) {
+        if(val == 127) { // pressed
+            RK002_sendControlChange(_defaultChannel, FLT_CT, val);
+        } else {            
+            RK002_sendControlChange(_defaultChannel, FLT_CT, _workmem[17]/*FLT_CT*/);
+        }
+        return false;
+    }   
+
     // save new CC value in _workmem
     for(byte i = 0 ; i < PATCHLEN ; i++) {
         if(_patchmatch[i] == nr){
@@ -365,6 +381,7 @@ void updateParams() {
     _ccMod = RK002_paramGet(CC_MOD);
     _ccMute = RK002_paramGet(CC_MUTE);
     _programChangeEnable = (RK002_paramGet(ENABLE_PROGRAM_CHANGE) == 1);
+    _ccAfterTouch = RK002_paramGet(CC_AFTER_TOUCH);
     _activepatch = RK002_paramGet(BOOTPATCH);
 }
 

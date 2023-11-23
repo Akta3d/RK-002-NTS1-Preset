@@ -1,5 +1,5 @@
 # RK-002-NTS1-Preset  
-Version 0.6  
+Version 0.7  
 Author: Akta3d : https://github.com/Akta3d
   
 **INSPIRED FROM:** Retrokits LaunchKey NTS1 version 0.3
@@ -64,6 +64,7 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
 - **CC_MOD:** (Default 0) Midi CC control of the Mod wheel. If greater than 0, remap modulation wheel on other CC 26 (LFO depth) to be able to make tremolo's.
 - **CC_MUTE:** (Default 105) Midi CC control mute all notes
 - **ENABLE_PROGRAM_CHANGE:** (Default 0) If 1, allow to change preset with Midi Program Change message
+- **CC_AFTER_TOUCH:** (Default 2) Midi CC control of the after touch, allow to send 127 value to CC 43 (Filter CutOff), then restore previous value on release aftertouch
 - **BOOTPATCH:** Startup preset to send to the NTS1 on boot (updated when you do a preset read/write operation which will be the startup one for your next session).
   
 **Step 4: Midi controller configuration to control the RK-002 cable**
@@ -84,6 +85,10 @@ See the [NTS1 Midi implementation](https://cdn.korg.com/us/support/download/file
   - Channel: {CHANNEL} of the NTS1
 - Configure the Mute CC
   - Control CC: {CC_MUTE}
+  - Value: 127 when pressed
+  - Channel: {CHANNEL} of the NTS1
+- Configure the After touch CC
+  - Control CC: {CC_AFTER_TOUCH}
   - Value: 127 when pressed
   - Channel: {CHANNEL} of the NTS1
 
